@@ -29,7 +29,7 @@ keyword = {dmax} or {line} or {delaystep} or {dt_grow} or {dt_shrink}
   {integrator} value = {eulerimplicit} or {eulerexplicit} or {verlet} 
                        or {leapfrog}  for adaptglok
   {halfstepback} value = {yes} or {no} for adaptglok :pre
-  {relaxbox} value = {no} or {iso} or {axial} for adaptglok 
+  {relaxbox} value = {no} or {iso} or {aniso} for adaptglok 
   {relaxbox_modulus} value = {float} for adaptglok 
   {relaxbox_rate} value = {float} for adaptglok 
 :ule
@@ -88,7 +88,7 @@ In particular for debugging purpose, it is possible to switch off the
 the backstep when downhill, by using and {halfstepback}.
 
 The style {adaptglok} allows for a basic box relaxation to a stress-free 
-state by choosing {relaxbox} {iso} or {axial}. One should give an
+state by choosing {relaxbox} {iso} or {aniso}. One should give an
 approximated value for the bulk modulus {relaxbox_modulus} of the system.
 The default value of the relaxation rate {relaxbox_rate} should be 
 optimum in most situations.

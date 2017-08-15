@@ -33,6 +33,7 @@ class MinAdaptGlok : public Min {
   void reset_vectors();
   void save_box_state();
   void relax_box();
+  double min_energy(double *);
   int iterate(int);
 
  private:
@@ -40,7 +41,12 @@ class MinAdaptGlok : public Min {
   double alpha;
   bigint last_negative,ntimestep_fire;
   class Compute *temperature,*pressure;
-  double boxlo[3],h_inv[6];
+  double box0[3],boxlo[3],boxhi[3],h_inv[6],boxhi_previous[3];
+  double pressure_current_s,pressure_previous_s,pressure_previous[3];
+  double vol0,xprdinit,yprdinit,zprdinit,scale,pv2e,eng;
+  int no_pressure_flag;
+  double *pressure_current;
+  double *hextra;
 };
 
 }

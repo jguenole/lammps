@@ -63,7 +63,7 @@ Min::Min(LAMMPS *lmp) : Pointers(lmp)
   tmax = 2.0;
   tmin = 0.02;
   integrator = 0;
-  relaxbox_modulus = 1000000;
+  relaxbox_modulus = 1000000.0;
   relaxbox_rate = 0.33;
   halfstepback_flag = 1;
   relaxbox_flag = 0;
@@ -264,7 +264,7 @@ void Min::setup(int flag)
   // remove these restriction eventually
 
   if (searchflag == 0) {
-    if (nextra_global)
+    if (nextra_global && strcmp(update->minimize_style,"adaptglok") != 0)
       error->all(FLERR,
                  "Cannot use a damped dynamics min style with fix box/relax");
     if (nextra_atom)
@@ -689,12 +689,13 @@ void Min::modify_params(int narg, char **arg)
       if (strcmp(arg[iarg+1],"yes") == 0) halfstepback_flag = 1;
       else if (strcmp(arg[iarg+1],"no") == 0) halfstepback_flag = 0;
       else error->all(FLERR,"Illegal min_modify command");
-      iarg += 2;       
+      iarg += 2;
+      /*       
      } else if (strcmp(arg[iarg],"relaxbox") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal min_modify command");
       if (strcmp(arg[iarg+1],"no") == 0) relaxbox_flag = 0;
       else if (strcmp(arg[iarg+1],"iso") == 0) relaxbox_flag = 1;
-      else if (strcmp(arg[iarg+1],"axial") == 0) relaxbox_flag = 2;
+      else if (strcmp(arg[iarg+1],"aniso") == 0) relaxbox_flag = 2;
       else error->all(FLERR,"Illegal min_modify command");
       iarg += 2;       
     } else if (strcmp(arg[iarg],"relaxbox_modulus") == 0) {
@@ -704,7 +705,8 @@ void Min::modify_params(int narg, char **arg)
     } else if (strcmp(arg[iarg],"relaxbox_rate") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal min_modify command");
       relaxbox_rate = force->numeric(FLERR,arg[iarg+1]);
-      iarg += 2;       
+      iarg += 2;
+      */       
      } else if (strcmp(arg[iarg],"integrator") == 0) {
       if (iarg+2 > narg) error->all(FLERR,"Illegal min_modify command");
       if (strcmp(arg[iarg+1],"eulerimplicit") == 0) integrator = 0;

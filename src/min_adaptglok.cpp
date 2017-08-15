@@ -52,6 +52,14 @@ void MinAdaptGlok::init()
     temperature = modify->compute[icompute];
     icompute = modify->find_compute("thermo_press");
     pressure = modify->compute[icompute];
+
+    /*
+    no_pressure_flag = 0;
+    xprdinit = domain->xprd;
+    yprdinit = domain->yprd;
+    zprdinit = domain->zprd;
+    vol0 = xprdinit * yprdinit * zprdinit;
+    */
   }
 }
 
@@ -105,9 +113,10 @@ void MinAdaptGlok::relax_box()
   // rescale simulation box from linesearch starting point
   // scale atom coords for all atoms or only for fix group atoms
 
+  //fprintf(screen,"boxhi %g \n", domain->boxhi[0]);
+
   double **x = atom->x;
-  double epsilon;
-  double *current_pressure_v;
+  double s0,E,epsilon;
   int *mask = atom->mask;
   n = atom->nlocal + atom->nghost;
   save_box_state();
@@ -117,19 +126,61 @@ void MinAdaptGlok::relax_box()
   domain->x2lamda(n);
 
   // ensure the virial is tallied
-
+  // update the corresponding flag
+  pressure->addstep(update->ntimestep);
   update->vflag_global = update->ntimestep;
-
+  
   // compute pressure and change simulation box
 
-  pressure->compute_scalar();
+  //fprintf(screen,"boxhi %g \n", domain->boxhi[0]);
+
+  pressure->compute_scalar();``
   pressure->compute_vector();
-  epsilon = pressure->scalar / relaxbox_modulus;
-  current_pressure_v = pressure->vector;
+  pressure_current = pressure->vector;
+  pressure_current_s = pressure->scalar;
+  //fprintf(screen,"pressure_previous_s %g\n", pressure_previous_s);
+  if (no_pressure_flag){
+    //fprintf(screen,"-boxhip %g \n", boxhi_previous[0]);
+    //fprintf(screen,"-boxhi %g \n", domain->boxhi[0]);
+    E = (pressure_previous_s - pressure_current_s) / (boxhi_previous[0] - domain->boxhi[0]);
+    s0 = pressure_current_s - E * domain->boxhi[0];
+    //fprintf(screen,"(pressure_previous_s - pressure_current_s) / (boxhi_previous[0] - domain->boxhi[0]) %g %g %g %g\n", pressure_previous_s,pressure_current_s,boxhi_previous[0],domain->boxhi[0]);
+    box0[0] = - s0 / E;
+    //fprintf(screen,"box0 %g \n",box0[0]);
+    epsilon = (box0[0] - domain->boxhi[0]) / domain->boxhi[0];
+    epsilon = pressure_current_s / relaxbox_modulus;
+    //epsilon = 0.0001;
+    //epsilon = - pressure_current_s / E;
+  }else{
+    epsilon = 0.0001;
+    no_pressure_flag = 1;
+    //fprintf(screen,"TEST %g \n", pressure_current_s);
+  }
+  //fprintf(screen,"E s0 b0 epsilon %g %g %g %g \n", E,s0,box0[0],epsilon);
+
+  //pressure_previous_s = pressure_current_s;
+  //boxhi_previous = domain->boxhi;
+
   for (int i = 0; i < 3; i++) {
-    if (relaxbox_flag == 2) epsilon = current_pressure_v[i] / relaxbox_modulus;
+    pressure_previous_s = pressure_current_s;
+    boxhi_previous[i] = domain->boxhi[i];
+    //fprintf(screen,"--boxhip %g \n", boxhi_previous[i]);
+    //fprintf(screen,"--boxhi %g \n", domain->boxhi[i]);
+    //epsilon = boxhi_previous
+    //if (relaxbox_flag == 2) epsilon = pressure_current[i] / relaxbox_modulus;
+    domain->boxhi[i] += domain->boxhi[i] * epsilon * relaxbox_rate;
+    //fprintf(screen,"boxhi %g %g \n", domain->boxhi[i],boxhi_previous[i]);
+  }
+
+  //fprintf(screen,"boxhi %g \n", domain->boxhi[0]);
+
+  /*
+  epsilon = pressure->scalar / relaxbox_modulus;
+  for (int i = 0; i < 3; i++) {
+    if (relaxbox_flag == 2) epsilon = pressure_current[i] / relaxbox_modulus;
     domain->boxhi[i] += domain->boxhi[i] * epsilon * relaxbox_rate;;
   }
+  */
 
   // reset global and local box to new size/shape
 
@@ -140,6 +191,18 @@ void MinAdaptGlok::relax_box()
 
   domain->lamda2x(n);
   save_box_state();
+
+  /*
+  pv2e = 1.0 / force->nktv2p;
+  scale = domain->xprd/xprdinit;
+  nextra_global = 1;  
+  fprintf(screen,"nextra_global %i \n", nextra_global);
+  fprintf(screen,"value %g \n", pv2e * (pressure_current_s)*3.0*scale*scale*vol0);
+  if (nextra_global)
+    for (int i = 0; i < 3; i++) {
+      fextra[i] = pv2e * (pressure_current_s)*3.0*scale*scale*vol0;
+    }
+  */
 }
 
 /* ---------------------------------------------------------------------- */
@@ -198,8 +261,8 @@ int MinAdaptGlok::iterate(int maxiter)
 
     // Relax the simulation box
 
-    if (relaxbox_flag) relax_box();
-
+    //if (relaxbox_flag) relax_box();
+   
    // vdotfall = v dot f
 
     // Euler || Leap Frog integration
